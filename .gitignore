@@ -1,0 +1,43 @@
+# Built files
+/build/
+/app/build/
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+bin/
+gen/
+out/
+
+# Gradle
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.DS_Store
+
+# Local configuration
+local.properties
+
+# Keystore files
+*.jks
+*.keystore
+
+# NDK
+obj/
+.externalNativeBuild/
+
+# Logs
+*.log
+
+# Kotlin
+.kotlin/
+
+# Captures (screenshots from Layout Inspector)
+captures/

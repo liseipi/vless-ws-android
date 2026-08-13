@@ -18,7 +18,9 @@
   正确的可执行文件，amd64 版本在沙盒里直接运行验证过 `--version`/`--help`
   能正常输出。
 - **vless-ws-client**：延用之前 macOS 项目里已经验证过的同一份 Go 源码，
-  同样用 `CGO_ENABLED=0` 编译成纯静态的 Android 版本。
+  同样用 `CGO_ENABLED=0` 编译成纯静态的 Android 版本。**新增的 SOCKS5 UDP
+  ASSOCIATE 支持**在沙盒里用手写测试客户端 + UDP echo 服务器做了完整的
+  往返测试（单目标、多目标并发两种场景），协议层面是真正跑通的。
 
 ## 完全没法验证的部分
 
@@ -86,29 +88,20 @@ android-project/
 │   │       └── x86/{libvlessclient.so, libtun2socks.so}
 ```
 
-## 已知的重要限制：DNS/UDP 大概率不通
+## DNS/UDP 现在已经支持了
 
-`vless-ws-client` 现在的 SOCKS5 实现**只支持 TCP CONNECT，没有实现 UDP
-ASSOCIATE**（这是它一开始作为 macOS/Linux 命令行代理工具设计时就定的范围）。
-tun2socks 有 `-udp-timeout` 这个参数，说明它是会尝试把 UDP 流量（DNS 查询
-大多数走的就是 UDP）也通过 SOCKS5 的 UDP ASSOCIATE 机制转发的——但我们的
-SOCKS5 服务端根本不认这个命令。
+之前这里写的是"DNS/UDP 大概率不通"——`vless-ws-client` 那时候的 SOCKS5 实现
+只支持 TCP CONNECT，没有 UDP ASSOCIATE，而 tun2socks 会把 UDP 流量（DNS 查询
+走的就是 UDP）通过 SOCKS5 UDP ASSOCIATE 转发，两边对不上，DNS 解析会失败。
 
-**实际后果**：网页浏览这类 TCP 流量理论上能走通，但 DNS 解析大概率会失败或
-者超时，导致整个 VPN 实际不可用（连不了网，因为域名都解析不出来）。
-
-**后续要解决这个问题，两个方向**：
-1. 给 `vless-ws-client`（服务端 + 客户端）加上真正的 SOCKS5 UDP ASSOCIATE
-   支持，以及 VLESS 协议本身对 UDP 转发的处理——工作量不小，涉及服务端
-   session 管理和 VLESS 协议的 UDP 部分。
-2. 更简单的临时方案：在 Android 应用里自己做"DNS 劫持"——把设备的 DNS
-   服务器指向一个本地监听的假 DNS 服务，收到查询后通过已经工作的 TCP 隧道
-   发起 DNS-over-HTTPS 请求，伪造一个 A 记录 IP 返回给系统，实际连接这个
-   假 IP 时再通过 tun2socks 转发（这是很多同类工具的常见做法，但也需要额外
-   开发一个 fake-ip/DNS 拦截层）。
-
-这个问题不是"能不能跑起来"的小问题，是这套方案目前**必须解决才能真正当
-VPN 用**的核心缺口，建议下一步优先处理这个。
+现在 `vless-ws-client`（服务端 + 客户端）已经补上了完整的 SOCKS5 UDP
+ASSOCIATE 支持，`jniLibs/` 里的 `libvlessclient.so` 是最新编译的、带 UDP
+支持的版本。这部分已经用手写的 SOCKS5 UDP 测试客户端 + UDP echo 服务器在
+沙盒里做了完整的往返测试（单目标、三个并发不同目标各自独立隧道两种场景），
+链路本身是真正跑通的——但那是在 Linux 沙盒里直接测的 SOCKS5 协议层面，
+不是通过 tun2socks + Android VpnService 这整条链路测的，实际在 Android
+真机上 DNS 解析走不走得通、tun2socks 那边对 UDP ASSOCIATE 的具体处理细节
+对不对得上，还是需要你在真机上验证。
 
 ## 编译前需要你自己补的东西
 

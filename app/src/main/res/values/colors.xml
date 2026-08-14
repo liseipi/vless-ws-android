@@ -2,4 +2,15 @@
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- App palette (dark theme, matches target design) -->
+    <color name="bg_root">#0E1015</color>
+    <color name="card_bg">#1A1D27</color>
+    <color name="accent_blue">#7C93F5</color>
+    <color name="connect_button_bg">#7B93F0</color>
+    <color name="connect_button_text">#2E1A6B</color>
+    <color name="text_primary">#F2F3F7</color>
+    <color name="text_secondary">#AEB4C4</color>
+    <color name="text_muted">#7A8096</color>
+    <color name="danger_red">#E15A5A</color>
 </resources>

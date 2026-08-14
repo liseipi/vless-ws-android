@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="24dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="8dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <EditText
+                android:id="@+id/linkInput"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="粘贴 vless:// 链接可自动填充"
+                android:inputType="textUri|textMultiLine"
+                android:maxLines="3" />
+
+            <ImageButton
+                android:id="@+id/scanLinkButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="6dp"
+                android:layout_marginStart="4dp"
+                android:src="@drawable/ic_scan"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Scan QR code" />
+
+            <Button
+                android:id="@+id/parseLinkButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:text="解析" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#33888888"
+            android:layout_marginTop="14dp"
+            android:layout_marginBottom="14dp" />
+
+        <EditText
+            android:id="@+id/nameInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="名称（例如 Default）" />
+
+        <EditText
+            android:id="@+id/hostInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="服务器地址，例如 example.com"
+            android:inputType="textUri"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/portInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="端口，例如 443"
+            android:inputType="number"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/pathInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="路径，例如 /api"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/uuidInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="UUID"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/tokenInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Token（可选）"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/sniInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="SNI（可选）"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/wsHostInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="WebSocket Host（可选）"
+            android:layout_marginTop="8dp" />
+
+        <Switch
+            android:id="@+id/tlsSwitch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="使用 TLS"
+            android:layout_marginTop="14dp" />
+
+    </LinearLayout>
+</ScrollView>

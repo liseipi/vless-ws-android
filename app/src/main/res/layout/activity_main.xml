@@ -1,83 +1,133 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/bg_root"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="28dp"
+        android:paddingBottom="32dp">
+
+        <!-- Top bar: title + Import + Add -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="24dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="VLESS VPN"
+                android:textColor="@color/accent_blue"
+                android:textSize="30sp"
+                android:textStyle="bold" />
+
+            <ImageButton
+                android:id="@+id/scanButton"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:padding="6dp"
+                android:layout_marginEnd="4dp"
+                android:src="@drawable/ic_scan"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Scan QR code" />
+
+            <TextView
+                android:id="@+id/importButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Import"
+                android:textColor="@color/text_secondary"
+                android:textSize="17sp"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <TextView
+                android:id="@+id/addButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+"
+                android:textColor="@color/accent_blue"
+                android:textSize="30sp"
+                android:textStyle="bold"
+                android:paddingStart="14dp"
+                android:paddingEnd="4dp"
+                android:paddingVertical="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true" />
+        </LinearLayout>
+
+        <!-- Status card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:background="@drawable/bg_status_card"
+            android:padding="28dp">
+
+            <TextView
+                android:id="@+id/statusText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="○ Disconnected"
+                android:textColor="@color/text_secondary"
+                android:textSize="20sp"
+                android:paddingBottom="24dp" />
+
+            <TextView
+                android:id="@+id/connectButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Connect"
+                android:textColor="@color/connect_button_text"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:paddingVertical="18dp"
+                android:background="@drawable/bg_connect_button"
+                android:clickable="true"
+                android:focusable="true" />
+        </LinearLayout>
 
         <TextView
-            android:id="@+id/statusText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="未连接"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:paddingBottom="16dp" />
-
-        <EditText
-            android:id="@+id/hostInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="服务器地址，例如 example.com"
-            android:inputType="textUri" />
-
-        <EditText
-            android:id="@+id/portInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="端口，例如 443"
-            android:inputType="number" />
-
-        <EditText
-            android:id="@+id/pathInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="路径，例如 /api" />
-
-        <EditText
-            android:id="@+id/uuidInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="UUID" />
-
-        <EditText
-            android:id="@+id/tokenInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Token（可选）" />
-
-        <EditText
-            android:id="@+id/sniInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="SNI（留空默认等于服务器地址）" />
-
-        <Switch
-            android:id="@+id/tlsSwitch"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="使用 TLS"
-            android:checked="true"
-            android:layout_marginTop="8dp" />
+            android:text="Configurations"
+            android:textColor="@color/text_secondary"
+            android:textSize="16sp"
+            android:paddingTop="28dp"
+            android:paddingBottom="12dp" />
 
-        <Button
-            android:id="@+id/saveButton"
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/configList"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="保存配置"
-            android:layout_marginTop="16dp" />
+            android:clipToPadding="false"
+            android:overScrollMode="never" />
 
-        <Button
-            android:id="@+id/connectButton"
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="连接"
-            android:layout_marginTop="8dp" />
+            android:text="Routing all traffic via VLESS/WS tunnel"
+            android:textColor="@color/text_muted"
+            android:textSize="13sp"
+            android:gravity="center"
+            android:paddingTop="20dp" />
 
     </LinearLayout>
-</ScrollView>
+</androidx.core.widget.NestedScrollView>

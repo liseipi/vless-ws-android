@@ -32,11 +32,11 @@ class VlessVpnService : VpnService() {
             else -> {
                 val config = ConfigStore.load(this)
                 if (!config.isValid()) {
-                    broadcastStatus("配置不完整，请先在应用里填好服务器信息")
+                    broadcastStatus("No valid configuration selected")
                     stopSelf()
                     return START_NOT_STICKY
                 }
-                startForeground(NOTIFICATION_ID, buildNotification("正在连接…"))
+                startForeground(NOTIFICATION_ID, buildNotification("Connecting…"))
                 connect(config)
             }
         }
@@ -50,13 +50,13 @@ class VlessVpnService : VpnService() {
                     Log.d(TAG, line)
                 }
                 if (!started) {
-                    broadcastStatus("vless 客户端启动失败")
+                    broadcastStatus("Failed to start VLESS client")
                     stopSelf()
                     return@Thread
                 }
 
                 if (!processManager.waitForSocksReady(config.socksPort)) {
-                    broadcastStatus("等待本地 SOCKS5 端口超时")
+                    broadcastStatus("Timed out waiting for local SOCKS5 port")
                     processManager.stopAll()
                     stopSelf()
                     return@Thread
@@ -74,7 +74,7 @@ class VlessVpnService : VpnService() {
                 tunInterface = builder.establish()
                 val vpnIface = tunInterface
                 if (vpnIface == null) {
-                    broadcastStatus("建立 TUN 接口失败")
+                    broadcastStatus("Failed to establish TUN interface")
                     processManager.stopAll()
                     stopSelf()
                     return@Thread
@@ -91,7 +91,7 @@ class VlessVpnService : VpnService() {
                     Log.d(TAG, line)
                 }
                 if (!tunStarted) {
-                    broadcastStatus("tun2socks 启动失败")
+                    broadcastStatus("Failed to start tun2socks")
                     processManager.stopAll()
                     vpnIface.close()
                     tunInterface = null
@@ -99,11 +99,11 @@ class VlessVpnService : VpnService() {
                     return@Thread
                 }
 
-                updateNotification("已连接")
-                broadcastStatus("已连接")
+                updateNotification("Connected")
+                broadcastStatus("Connected")
             } catch (e: Exception) {
                 Log.e(TAG, "connect failed", e)
-                broadcastStatus("连接失败: ${e.message}")
+                broadcastStatus("Connection failed: ${e.message}")
                 stopSelf()
             }
         }.start()
@@ -113,7 +113,7 @@ class VlessVpnService : VpnService() {
         processManager.stopAll()
         tunInterface?.close()
         tunInterface = null
-        broadcastStatus("已断开")
+        broadcastStatus("Disconnected")
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }

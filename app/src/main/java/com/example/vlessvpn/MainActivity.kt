@@ -151,13 +151,25 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Immediate feedback so the button never looks unresponsive while the
-        // service spins up in the background.
+        // service spins up in the background. Note: the 15s connect-timeout
+        // timer is intentionally NOT started here — it starts once startVpn()
+        // actually runs. VpnService.prepare() can pop a system permission
+        // dialog that waits on the user, and that wait time must not count
+        // against our own timeout, or the app can show "timed out" while the
+        // system dialog is still just sitting there waiting for a tap.
         binding.connectButton.isEnabled = false
         updateStatusUi("Connecting…")
-        uiHandler.removeCallbacks(connectTimeoutRunnable)
-        uiHandler.postDelayed(connectTimeoutRunnable, CONNECT_TIMEOUT_MS)
 
-        val prepareIntent = VpnService.prepare(this)
+        val prepareIntent = try {
+            VpnService.prepare(this)
+        } catch (e: Exception) {
+            // Seen on some devices after repeated reinstalls: the system's VPN
+            // consent state gets left pointing at a stale UID from a previous
+            // install and prepare() throws instead of just returning an intent.
+            Toast.makeText(this, "系统 VPN 授权检查异常，请重启该应用后重试；如果反复出现，重启手机通常能清掉系统缓存的授权状态", Toast.LENGTH_LONG).show()
+            updateStatusUi("Disconnected")
+            return
+        }
         if (prepareIntent != null) {
             vpnPrepareLauncher.launch(prepareIntent)
         } else {
@@ -166,6 +178,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startVpn() {
+        uiHandler.removeCallbacks(connectTimeoutRunnable)
+        uiHandler.postDelayed(connectTimeoutRunnable, CONNECT_TIMEOUT_MS)
         val intent = Intent(this, VlessVpnService::class.java)
         startService(intent)
     }

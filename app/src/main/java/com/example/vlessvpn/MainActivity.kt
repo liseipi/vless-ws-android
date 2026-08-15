@@ -10,6 +10,8 @@ import android.graphics.Bitmap
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.widget.EditText
 import android.widget.ImageView
@@ -37,13 +39,25 @@ class MainActivity : AppCompatActivity() {
     /** Invoked with the raw scanned text once a QR scan finishes successfully. */
     private var pendingScanCallback: ((String) -> Unit)? = null
 
+    private val uiHandler = Handler(Looper.getMainLooper())
+
+    /** Safety net: if the service never broadcasts back (killed mid-flight, etc.),
+     *  don't leave the button stuck disabled forever. */
+    private val connectTimeoutRunnable = Runnable {
+        connected = false
+        Toast.makeText(this, "连接响应超时，请重试", Toast.LENGTH_SHORT).show()
+        updateStatusUi("Disconnected")
+    }
+
     private val vpnPrepareLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK) {
             startVpn()
         } else {
+            uiHandler.removeCallbacks(connectTimeoutRunnable)
             Toast.makeText(this, "需要授权 VPN 权限才能连接", Toast.LENGTH_SHORT).show()
+            updateStatusUi("Disconnected")
         }
     }
 
@@ -59,6 +73,7 @@ class MainActivity : AppCompatActivity() {
     private val statusReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val text = intent?.getStringExtra(VlessVpnService.EXTRA_STATUS_TEXT) ?: return
+            uiHandler.removeCallbacks(connectTimeoutRunnable)
             connected = text.equals("Connected", ignoreCase = true)
             updateStatusUi(text)
         }
@@ -98,6 +113,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         unregisterReceiver(statusReceiver)
+        uiHandler.removeCallbacksAndMessages(null)
         super.onDestroy()
     }
 
@@ -118,6 +134,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun onConnectClicked() {
         if (connected) {
+            binding.connectButton.isEnabled = false
+            updateStatusUi("Disconnecting…")
+            uiHandler.removeCallbacks(connectTimeoutRunnable)
+            uiHandler.postDelayed(connectTimeoutRunnable, DISCONNECT_TIMEOUT_MS)
             val intent = Intent(this, VlessVpnService::class.java)
             intent.action = VlessVpnService.ACTION_DISCONNECT
             startService(intent)
@@ -129,6 +149,13 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "请先添加并选择一个有效的配置", Toast.LENGTH_SHORT).show()
             return
         }
+
+        // Immediate feedback so the button never looks unresponsive while the
+        // service spins up in the background.
+        binding.connectButton.isEnabled = false
+        updateStatusUi("Connecting…")
+        uiHandler.removeCallbacks(connectTimeoutRunnable)
+        uiHandler.postDelayed(connectTimeoutRunnable, CONNECT_TIMEOUT_MS)
 
         val prepareIntent = VpnService.prepare(this)
         if (prepareIntent != null) {
@@ -150,6 +177,11 @@ class MainActivity : AppCompatActivity() {
             ContextCompat.getColor(this, if (connected) R.color.accent_blue else R.color.text_secondary)
         )
         binding.connectButton.text = if (connected) "Disconnect" else "Connect"
+        // "…" marks a transient state (Connecting…/Disconnecting…) — keep the button
+        // disabled during those, and re-enable for any terminal state (Connected,
+        // Disconnected, or an error message), so the UI never gets stuck looking
+        // unresponsive after a broadcast comes back.
+        binding.connectButton.isEnabled = !rawText.endsWith("\u2026")
     }
 
     // ---- QR scanning ----
@@ -369,5 +401,10 @@ class MainActivity : AppCompatActivity() {
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         clipboard.setPrimaryClip(ClipData.newPlainText("vless link", link))
         Toast.makeText(this, "链接已复制到剪贴板", Toast.LENGTH_SHORT).show()
+    }
+
+    companion object {
+        private const val CONNECT_TIMEOUT_MS = 15000L
+        private const val DISCONNECT_TIMEOUT_MS = 8000L
     }
 }

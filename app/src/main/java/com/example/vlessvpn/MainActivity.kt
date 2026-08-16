@@ -73,10 +73,16 @@ class MainActivity : AppCompatActivity() {
     private val statusReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val text = intent?.getStringExtra(VlessVpnService.EXTRA_STATUS_TEXT) ?: return
-            uiHandler.removeCallbacks(connectTimeoutRunnable)
-            connected = text.equals("Connected", ignoreCase = true)
-            updateStatusUi(text)
+            onStatusText(text)
         }
+    }
+
+    /** Shared status handler — reached from the broadcast receiver and from the
+     *  service's in-process listener. Must run on the main thread. */
+    private fun onStatusText(text: String) {
+        uiHandler.removeCallbacks(connectTimeoutRunnable)
+        connected = text.equals("Connected", ignoreCase = true)
+        updateStatusUi(text)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,7 +106,20 @@ class MainActivity : AppCompatActivity() {
         binding.scanButton.setOnClickListener { scanAndAddConfig() }
 
         refreshConfigList()
-        updateStatusUi("Disconnected")
+
+        // Seed the UI from the service's actual current state (it may already be
+        // connected and running in the background from before this Activity
+        // instance existed) instead of always assuming "Disconnected" and hoping
+        // a broadcast arrives — one never will if nothing is changing.
+        val initialStatus = VlessVpnService.lastStatusText
+        connected = initialStatus.equals("Connected", ignoreCase = true)
+        updateStatusUi(initialStatus)
+
+        // Subscribe to the service's in-process status listener — the primary
+        // channel (see VlessVpnService.broadcastStatus for why the broadcast
+        // alone is unreliable on HyperOS). The listener can fire from the
+        // service's worker thread, so hop to the main thread before touching UI.
+        VlessVpnService.statusListener = { text -> uiHandler.post { onStatusText(text) } }
 
         val filter = IntentFilter(VlessVpnService.ACTION_STATUS_UPDATE)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -112,6 +131,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        VlessVpnService.statusListener = null
         unregisterReceiver(statusReceiver)
         uiHandler.removeCallbacksAndMessages(null)
         super.onDestroy()

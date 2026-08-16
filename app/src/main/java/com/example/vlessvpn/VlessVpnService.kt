@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import java.net.Inet4Address
 import java.net.InetAddress
 
 class VlessVpnService : VpnService() {
@@ -181,11 +182,20 @@ class VlessVpnService : VpnService() {
      */
     private fun resolveServerAddress(config: VpnConfig): VpnConfig {
         return try {
-            val resolvedIp = InetAddress.getByName(config.host).hostAddress
+            // Prefer IPv4: getByName() hands the Go client whatever comes first
+            // (usually the AAAA record), and on this device's network the IPv6
+            // path to Cloudflare measured ~75% packet loss while IPv4 was clean.
+            // A dead IPv6 uplink makes the client's WSS connect fail its retries
+            // and silently stop relaying — the local SOCKS port keeps accepting,
+            // so the UI says Connected but no traffic flows (DNS retry storms).
+            // Fall back to IPv6 only when the domain has no A record at all.
+            val addrs = InetAddress.getAllByName(config.host)
+            val chosen = addrs.firstOrNull { it is Inet4Address } ?: addrs.first()
+            val resolvedIp = chosen.hostAddress
             if (resolvedIp.isNullOrBlank() || resolvedIp == config.host) {
                 config
             } else {
-                Log.i(TAG, "resolved ${config.host} -> $resolvedIp")
+                Log.i(TAG, "resolved ${config.host} -> $resolvedIp (${if (chosen is Inet4Address) "IPv4" else "IPv6"})")
                 config.copy(
                     host = resolvedIp,
                     sni = config.sni.ifBlank { config.host },
@@ -222,6 +232,17 @@ class VlessVpnService : VpnService() {
     }
 
     private fun broadcastStatus(text: String) {
+        lastStatusText = text
+        // Primary delivery path: call the in-process listener directly. On
+        // HyperOS (Xiaomi) the implicit sendBroadcast below never even reaches
+        // the system — the intent vanishes before AMS enqueues it (confirmed via
+        // `dumpsys activity broadcasts`: our STATUS_UPDATE never appears in the
+        // broadcast history while same-window system broadcasts do), so the UI
+        // would sit at "Connecting…" until the 15s timeout falsely reports
+        // "Disconnected" even though the tunnel is up. Activity and service run
+        // in the same process, so a plain callback is both simpler and immune to
+        // ROM-level broadcast filtering. The broadcast is kept as a fallback.
+        statusListener?.invoke(text)
         val intent = Intent(ACTION_STATUS_UPDATE)
         intent.putExtra(EXTRA_STATUS_TEXT, text)
         sendBroadcast(intent)
@@ -257,5 +278,25 @@ class VlessVpnService : VpnService() {
         const val ACTION_DISCONNECT = "com.example.vlessvpn.DISCONNECT"
         const val ACTION_STATUS_UPDATE = "com.example.vlessvpn.STATUS_UPDATE"
         const val EXTRA_STATUS_TEXT = "status_text"
+
+        /**
+         * The most recent status text this service broadcast, kept in-process so a
+         * freshly (re)created MainActivity can learn the real current state
+         * immediately — instead of always assuming "Disconnected" and waiting for a
+         * broadcast that will never come if the tunnel was already up and running
+         * in the background. Resets to the default on a fresh process start, which
+         * is correct: if the whole app process died, the tunnel died with it.
+         */
+        @Volatile
+        var lastStatusText: String = "Disconnected"
+            private set
+
+        /**
+         * In-process subscriber notified (on whatever thread broadcastStatus ran)
+         * with each status change. The Activity sets this in onCreate and clears
+         * it in onDestroy; it must hop to the main thread before touching views.
+         */
+        @Volatile
+        var statusListener: ((String) -> Unit)? = null
     }
 }

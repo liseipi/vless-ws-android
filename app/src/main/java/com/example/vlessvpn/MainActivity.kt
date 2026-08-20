@@ -6,6 +6,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.ColorStateList
 import android.graphics.Bitmap
 import android.net.VpnService
 import android.os.Build
@@ -205,17 +206,51 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateStatusUi(rawText: String) {
-        val symbol = if (connected) "\u25CF" else "\u25CB" // filled / hollow circle
+        val transient = rawText.endsWith("\u2026")
+        val isConnected = rawText.equals("Connected", ignoreCase = true)
+        val isIdle = rawText.equals("Disconnected", ignoreCase = true)
+
+        val symbol = if (isConnected) "\u25CF" else "\u25CB" // filled / hollow circle
+
+        // Status text: green = connected, amber = in progress, gray = idle, red = error.
+        val statusColor = when {
+            isConnected -> R.color.status_connected
+            transient -> R.color.status_connecting
+            isIdle -> R.color.text_secondary
+            else -> R.color.danger_red
+        }
         binding.statusText.text = "$symbol $rawText"
-        binding.statusText.setTextColor(
-            ContextCompat.getColor(this, if (connected) R.color.accent_blue else R.color.text_secondary)
+        binding.statusText.setTextColor(ContextCompat.getColor(this, statusColor))
+
+        // Button: blue = Connect, red = Disconnect, muted = busy (disabled).
+        binding.connectButton.text =
+            if (isConnected || rawText.startsWith("Disconnect")) "Disconnect" else "Connect"
+        binding.connectButton.backgroundTintList = ColorStateList.valueOf(
+            ContextCompat.getColor(
+                this,
+                when {
+                    isConnected -> R.color.danger_red
+                    transient -> R.color.button_disabled_bg
+                    else -> R.color.connect_button_bg
+                }
+            )
         )
-        binding.connectButton.text = if (connected) "Disconnect" else "Connect"
+        binding.connectButton.setTextColor(
+            ContextCompat.getColor(
+                this,
+                when {
+                    isConnected -> R.color.white
+                    transient -> R.color.text_secondary
+                    else -> R.color.connect_button_text
+                }
+            )
+        )
+
         // "…" marks a transient state (Connecting…/Disconnecting…) — keep the button
         // disabled during those, and re-enable for any terminal state (Connected,
         // Disconnected, or an error message), so the UI never gets stuck looking
         // unresponsive after a broadcast comes back.
-        binding.connectButton.isEnabled = !rawText.endsWith("\u2026")
+        binding.connectButton.isEnabled = !transient
     }
 
     // ---- QR scanning ----

@@ -13,4 +13,9 @@
     <color name="text_secondary">#AEB4C4</color>
     <color name="text_muted">#7A8096</color>
     <color name="danger_red">#E15A5A</color>
+
+    <!-- Connection status colors -->
+    <color name="status_connected">#5ED6A3</color>
+    <color name="status_connecting">#F0B84D</color>
+    <color name="button_disabled_bg">#3A4366</color>
 </resources>

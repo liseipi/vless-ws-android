@@ -25,8 +25,6 @@ import androidx.core.content.FileProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.vlessvpn.databinding.ActivityMainBinding
 import com.example.vlessvpn.databinding.DialogEditConfigBinding
-import com.journeyapps.barcodescanner.ScanContract
-import com.journeyapps.barcodescanner.ScanOptions
 import java.io.File
 import java.io.FileOutputStream
 
@@ -61,10 +59,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val qrScanLauncher = registerForActivityResult(ScanContract()) { result ->
+    private val qrScanLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
         val callback = pendingScanCallback
         pendingScanCallback = null
-        val raw = result.contents
+        val raw = result.data?.getStringExtra(ScanQrActivity.EXTRA_RESULT)
         if (raw != null && callback != null) {
             callback(raw)
         }
@@ -222,12 +222,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun launchScanner(onResult: (String) -> Unit) {
         pendingScanCallback = onResult
-        val options = ScanOptions()
-        options.setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-        options.setPrompt("将二维码放入框内扫描")
-        options.setBeepEnabled(false)
-        options.setOrientationLocked(true)
-        qrScanLauncher.launch(options)
+        qrScanLauncher.launch(Intent(this, ScanQrActivity::class.java))
     }
 
     private fun scanAndAddConfig() {

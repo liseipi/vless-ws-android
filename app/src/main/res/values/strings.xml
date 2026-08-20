@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">VlessVPN</string>
+    <string name="scan_hint">将二维码放入框内，识别成功后自动返回</string>
+    <string name="scan_close">关闭扫码</string>
+    <string name="scan_torch">手电筒</string>
+    <string name="scan_permission_denied">需要相机权限才能扫码</string>
 </resources>

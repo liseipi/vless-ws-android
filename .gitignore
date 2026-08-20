@@ -1,6 +1,7 @@
 # Built files
 /build/
 /app/build/
+/app/release/
 *.apk
 *.ap_
 *.aab
@@ -41,3 +42,6 @@ obj/
 
 # Captures (screenshots from Layout Inspector)
 captures/
+
+# Profiling / heap dumps
+*.hprof
